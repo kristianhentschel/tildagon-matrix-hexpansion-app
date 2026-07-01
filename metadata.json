@@ -1,0 +1,6 @@
+{
+  "callable": "MatrixHexpansionApp",
+  "name": "LED Matrix Hexpansion",
+  "category": "Apps",
+  "hidden": false
+}
