@@ -20,7 +20,7 @@ class LiteLoop (Board):
 
   @staticmethod
   def match_header(header: HexpansionHeader):
-    return header.friendly_name == "liteloop"
+    return header.friendly_name == "Liteloop"
 
   @staticmethod
   def name():

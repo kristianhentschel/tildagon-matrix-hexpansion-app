@@ -13,12 +13,14 @@ from .liteloop import LiteLoop
 
 VID = 0xCAFE
 PID = 0x54E1
+EEPROM_ADDRESS = 0x50
+
 BOARDS = [
     LiteLoop,
 ]
 
 class MatrixHexpansionApp(app.App):
-    def __init__(self, ):
+    def __init__(self):
         self.button_states = Buttons(self)
         self.boards = []
 
@@ -61,14 +63,15 @@ class MatrixHexpansionApp(app.App):
 
     def scan_boards(self):
         results = []
-        slots = get_slots_by_vid_pid(vid=VID, pid=PID)
-        for slot in slots:
-            i2c = I2C(slot)
-            header = read_hexpansion_header(i2c)
-            for board in BOARDS:
-                if board.match_header(header):
-                    results.append(board(HexpansionConfig(slot), header))
-                    break
+        for port in range(1, 7):
+            i2c = I2C(port)
+            header = read_hexpansion_header(i2c, eeprom_addr=EEPROM_ADDRESS)
+            if header:
+                print(port, VID, header.vid, PID, header.pid, header.friendly_name)
+                for board in BOARDS:
+                    if header.vid == VID and header.pid == PID and board.match_header(header):
+                        results.append(board(HexpansionConfig(port), header))
+                        break
         print(f"Found {len(self.boards)} matching hexpansions")
         self.boards = results
 
