@@ -1,6 +1,6 @@
 [app]
 # The name of your app as displayed in the menu
-name = "LED Matrix Hexpansion"
+name = "Matrix Hexpansion"
 
 # The submenu where your app should appear.
 # One of: "Badge", "Music", "Media", "Apps", "Games", "Background"
@@ -31,10 +31,10 @@ license = "LGPL-3.0-only"
 url = "https://github.com/kristianhentschel/tildagon-matrix-hexpansion-app"
 
 # Description of your app.  Maximum 140 characters!
-description = "Companion app for the LED Matrix hexpansion. Control patterns and animations, display scrolling text or images, or flash your own code."
+description = "Companion app for the LED Matrix Hexpansion. Control patterns and animations, display scrolling text or images, or flash your own code."
 
 # Version number of your app.  If you push a commit where this number is
 # increased, we interpret this as a new version being released.
 #
-# Version number must be an string!
+# Version number must be a string!
 version = "0.0.1"
