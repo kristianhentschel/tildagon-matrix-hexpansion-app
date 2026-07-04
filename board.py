@@ -13,5 +13,14 @@ class Board:
   def match_header():
     return True
 
+  @staticmethod
+  def name():
+    return ""
+
   def flash_firmware(self, image: str):
     MatrixHexpansionFirmware(self.port).flash_firmware(image)
+
+  def __str__(self):
+    return f"{self.port}: {self.name()}"
+
+  

@@ -7,7 +7,7 @@ ADDRESS = 0x20
 REG_PATTERN_INDEX = 0x37
 REG_DIRECT_CONTROL = 0x50
 
-class LiteLoop (Board):
+class LiteLoopBoard (Board):
   def __init__(self, config: HexpansionConfig, header: HexpansionHeader):
     super().__init__(config, header)
 

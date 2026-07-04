@@ -21,6 +21,10 @@ PORT_ND_PINS = [
   EPIN_ND_F,
 ]
 
+def port_is_used(port):
+  nd_pin = ePin(PORT_ND_PINS[port - 1])
+  return nd_pin.value() == 0
+
 class MatrixHexpansionFirmware:
   def __init__(self, port):
     self.config = HexpansionConfig(port)

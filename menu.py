@@ -28,6 +28,8 @@ from app_components import Menu, tokens
 MENU_MAIN = "Main"
 MENU_FIRMWARE_UPDATE = "Firmware Update"
 MENU_HELP = "Help"
+MENU_PATTERN_PORT = "Pattern port"
+MENU_PATTERN_PATTERN = "Pattern"
 
 # Menu item names, only for display, don't have to be unique
 ALL_OFF = "All off"
@@ -93,10 +95,19 @@ class MatrixHexpansionMenu:
         (ALL_OFF, None),
         (ALL_DEFAULT, None),
         (TEXT, None),
-        (PATTERN, None),
+        (PATTERN, lambda: self.set_menu(MENU_PATTERN_PORT)),
         (FIRMWARE_UPDATE, lambda: self.set_menu(MENU_FIRMWARE_UPDATE)),
         (HELP, lambda: self.set_menu(MENU_HELP)),
         (SETTINGS, None),
+      ]
+    elif menu_name == MENU_PATTERN_PORT:
+      boards = self.app.boards
+      return [
+        ("All", None)
+        *[
+          ("", self.app.boards),
+        ],
+        ("", None)
       ]
     else:
       return [
