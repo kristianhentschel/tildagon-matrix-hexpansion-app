@@ -27,7 +27,7 @@ BOARDS = [
 class MatrixHexpansionApp(app.App):
   def __init__(self):
     self.boards = []
-    self.scan_boards()
+    # self.scan_boards() # scan on relevant menus, for faster startup
 
     eventbus.on(MatrixHexpansionToast, self.handle_toast, self)
 
