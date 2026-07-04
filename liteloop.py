@@ -9,7 +9,7 @@ REG_DIRECT_CONTROL = 0x50
 
 class LiteLoop (Board):
   def __init__(self, config: HexpansionConfig, header: HexpansionHeader):
-    super(config, header)
+    super().__init__(config, header)
 
   def set_pattern(self, pattern_index):
     # select pattern
