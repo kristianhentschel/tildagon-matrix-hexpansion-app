@@ -229,6 +229,7 @@ class MatrixHexpansionMenu:
     return [
       (
         f"All '{boards[0].name()}' (x{len(boards)})", 
+        lambda boards=boards: self.set_menu(next_menu, selected_boards=boards),
       ) for boards in groups if len(boards) > 1
     ] + [
       (
