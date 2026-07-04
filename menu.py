@@ -1,7 +1,7 @@
 import math
-
-from app_components import Menu, tokens
 import re
+import os
+from app_components import Menu, Notification, tokens
 
 # MAIN
 #  ALL OFF
@@ -32,9 +32,12 @@ import re
 #   Accept images from other apps
 #   React to emote events
 
+ASSET_PATH="/apps/kristianhentschel_tildagon_matrix_hexpansion_app/assets/"
+
 # Menu names, may be displayed but must also be unique
 MENU_MAIN = "Main"
-MENU_FIRMWARE_UPDATE = "Firmware Update"
+MENU_FIRMWARE_UPDATE_PORT = "Firmware update port"
+MENU_FIRMWARE_UPDATE_IMAGE = "Firmware update image"
 MENU_HELP = "Help"
 MENU_PATTERN_PORT = "Pattern port"
 MENU_PATTERN_PATTERN = "Pattern"
@@ -63,6 +66,7 @@ class MatrixHexpansionMenu:
     self.menu_name = MENU_MAIN
     self.menu_state = {}
     self.highlighted_ports = []
+    self.notification = None
 
     self.set_menu(self.menu_name)
   
@@ -108,8 +112,8 @@ class MatrixHexpansionMenu:
       menu_name, position = self.menu_stack.pop()
       self.set_menu(menu_name, position=position, back=True)
 
-      # TODO workaround to clear port highlighting on return to main menu
-      if menu_name == MENU_MAIN:
+      # TODO workaround to clear port highlighting on return to some menus
+      if menu_name in [MENU_MAIN, MENU_FIRMWARE_UPDATE_PORT, MENU_PATTERN_PORT]:
         self.menu_state["selected_boards"] = []
 
   def change(self, item):
@@ -121,10 +125,14 @@ class MatrixHexpansionMenu:
 
   def update(self, delta):
     self.menu.update(delta)
+    if (self.notification):
+      self.notification.update(delta)
 
   def draw(self, ctx):
     draw_ports(ctx, self.highlighted_ports, [b.port for b in self.menu_state.get("selected_boards", [])])
     self.menu.draw(ctx)
+    if (self.notification):
+      self.notification.draw(ctx)
 
   def get_menu_items(self, menu_name):
     if menu_name == MENU_MAIN:
@@ -133,36 +141,12 @@ class MatrixHexpansionMenu:
         (ALL_DEFAULT, lambda: self.set_menu(MENU_ALL_DEFAULT)),
         (TEXT, lambda: self.set_menu(MENU_TEXT)),
         (PATTERN, lambda: self.set_menu(MENU_PATTERN_PORT)),
-        (FIRMWARE_UPDATE, lambda: self.set_menu(MENU_FIRMWARE_UPDATE)),
+        (FIRMWARE_UPDATE, lambda: self.set_menu(MENU_FIRMWARE_UPDATE_PORT)),
         (HELP, lambda: self.set_menu(MENU_HELP)),
         (SETTINGS, lambda: self.set_menu(SETTINGS)),
       ]
     elif menu_name == MENU_PATTERN_PORT:
-      self.app.scan_boards()
-      filtered_boards = [board for board in self.app.boards if len(board.patterns()) > 0]
-
-      if len(filtered_boards) == 0:
-        return [(NOT_FOUND, None)]
-
-      groups = []
-      for board in filtered_boards:
-        found = False
-        for boards in groups:
-          if board.name() == boards[0].name():
-            boards.append(board)
-        if not found:
-          groups.append([board])
-      
-      return [
-        (
-          f"All '{boards[0].name()}' (x{len(boards)})", 
-        ) for boards in groups if len(boards) > 1
-      ] + [
-        (
-          f"P{board.port}: {board.name()}",
-          lambda board=board: self.set_menu(MENU_PATTERN_PATTERN, selected_boards=[board]),
-        ) for board in filtered_boards
-      ]
+      return self.get_boards_menu_items(MENU_PATTERN_PATTERN, include_groups=True, pattern_only=True)
     elif menu_name == MENU_PATTERN_PATTERN:
       try:
         boards = self.menu_state["selected_boards"]
@@ -181,20 +165,84 @@ class MatrixHexpansionMenu:
       except Exception as e:
         print(e)
         return [(NOT_FOUND, None)]
+    elif menu_name == MENU_FIRMWARE_UPDATE_PORT:
+      return self.get_boards_menu_items(MENU_FIRMWARE_UPDATE_IMAGE, include_unknown=True, include_unresponsive=True)
+    elif menu_name == MENU_FIRMWARE_UPDATE_IMAGE:
+      # TODO list assets/firmware updates folder
+      board = self.menu_state["selected_boards"][0]
+      images = [
+        (name, ASSET_PATH + name) for name in os.listdir(ASSET_PATH) if name.endswith(".bin")
+      ]
+
+      if len(images) == 0:
+        return [
+          NOT_FOUND, None
+        ]
+
+      def flash_firmware(image_path):
+        err = board.flash_firmware(image_path)
+        if (err):
+          self.notification = Notification(err)
+        else:
+          self.notification = Notification("Firmware updated")
+
+        # TODO workaround - return back to port selection
+        # TODO this immediately scans hexpansions and if it's still in bootloader mode it will show as unresponsive (modify bootloader to take an immediate reboot command)
+        self.back()
+
+      # TODO firmware upgrade progress, error handling
+      return [
+        (image_name, lambda image_path=image_path: flash_firmware(image_path)) for image_name, image_path in images
+      ]
     else:
       return [
         (NOT_IMPLEMENTED, None),
         (f"({menu_name})", None),
       ]
 
+  def get_boards_menu_items(self, next_menu, pattern_only=False, include_groups=False, include_unknown=False, include_unresponsive=False, no_scan=False):
+    if not no_scan:
+      self.app.scan_boards()
 
+    filtered_boards = self.app.boards
+    if pattern_only:
+      # this implicitly also filters out unresponsive and unknown because they have no patterns
+      filtered_boards = [board for board in filtered_boards if len(board.patterns()) > 0]
+
+    # TODO filter out unknown and unresponsive by default
+    print("got board items", next_menu, self.app.boards, filtered_boards)
+
+    if len(filtered_boards) == 0:
+      return [(NOT_FOUND, None)]
+
+    groups = []
+    
+    if include_groups:
+      for board in filtered_boards:
+        found = False
+        for boards in groups:
+          if board.name() == boards[0].name():
+            boards.append(board)
+        if not found:
+          groups.append([board])
+    
+    return [
+      (
+        f"All '{boards[0].name()}' (x{len(boards)})", 
+      ) for boards in groups if len(boards) > 1
+    ] + [
+      (
+        f"P{board.port}: {board.name()}",
+        lambda board=board: self.set_menu(next_menu, selected_boards=[board]),
+      ) for board in filtered_boards
+    ]
 
 def draw_ports(ctx, highlighted, selected):
   for port in range(1, 7):
     color = None
     if port in highlighted:
       color = "orange"
-    if port in selected:
+    elif port in selected:
       color = "yellow"
 
     if color is None:
@@ -203,6 +251,9 @@ def draw_ports(ctx, highlighted, selected):
     ctx.save()
     ctx.rotate(math.pi / 180 * ((port - 2) * 60))
     tokens.set_color(ctx, color)
-    ctx.move_to(100, 0)
+    ctx.font_size = 16
+    ctx.text_baseline = ctx.MIDDLE
+    ctx.text_align = ctx.RIGHT
+    ctx.move_to(120, 0)
     ctx.text(tokens.symbols["pointing_triangles"]["right"])
     ctx.restore()

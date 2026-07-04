@@ -96,10 +96,10 @@ class MatrixHexpansionFirmware:
         print(f"Firmware upgrade complete")
         
       # TODO need to do anything to reboot into user code now, or power cycle again?
+        return None
     except Exception as e:
       self.set_led_colour(COLOUR_ERROR)
-      print(f"Failed to flash image: {e}")
-      # TODO return error state to menu or at least raise a toast
+      return f"Upgrade failed: {e}"
     finally:
       # ensure badge pins are configured as inputs again
       power_pin.init(mode=self.nd_pin.IN)
