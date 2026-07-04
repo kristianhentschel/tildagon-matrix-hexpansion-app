@@ -51,13 +51,18 @@ class MatrixHexpansionMenu:
 
     self.set_menu(self.menu_name)
   
-  def set_menu(self, menu_name, position=0, back=False):
+  def set_menu(self, menu_name, position=0, back=False, **state):
+    # Clean up previous menu and save its name to return to on BACK
     if self.menu is not None:
-      # save previous menu name for back stack and clean up
       if not back:
         self.menu_stack.append((self.menu_name, self.menu.position))
       self.menu._cleanup()
+
+    # Update state variables before entering the next menu
+    for key in state:
+      self.menu_state[key] = state[key]
     
+    # Generate menu items for the new menu and instantiate it
     self.menu_items = self.get_menu_items(menu_name)
     self.menu_name = menu_name
     self.menu = Menu(self.app,
@@ -101,14 +106,37 @@ class MatrixHexpansionMenu:
         (SETTINGS, None),
       ]
     elif menu_name == MENU_PATTERN_PORT:
-      boards = self.app.boards
+      filtered_boards = [board for board in self.app.boards if len(board.patterns()) > 0]
+      self.app.scan_boards()
+      
       return [
-        ("All", None)
-        *[
-          ("", self.app.boards),
-        ],
-        ("", None)
+        ("All", None),
+      ] + [
+        (
+          f"P{board.port} {board.name()}",
+          lambda board=board: self.set_menu(MENU_PATTERN_PATTERN, selected_boards=[board]),
+        ) for board in filtered_boards
+      ] + [
+        ("", None),
       ]
+    elif menu_name == MENU_PATTERN_PATTERN:
+      try:
+        boards = self.menu_state["selected_boards"]
+        board = boards[0]
+
+        def set_pattern(code):
+          for b in boards:
+            print(f"Setting pattern {code} on board {b}")
+            b.set_pattern(code)
+
+        # assume all boards are of the same type
+        return [
+          (f"{name}", lambda code=code: set_pattern(code))
+            for code, name in board.patterns()
+        ]
+      except Exception as e:
+        print(e)
+        return [("N/A", None)]
     else:
       return [
         ("Nothing to see here", None),
