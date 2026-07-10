@@ -223,6 +223,8 @@ class MatrixHexpansionMenu:
         for boards in groups:
           if board.name() == boards[0].name():
             boards.append(board)
+            found = True
+            break
         if not found:
           groups.append([board])
     
