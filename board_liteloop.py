@@ -14,9 +14,14 @@ class LiteLoopBoard (Board):
   def set_pattern(self, pattern_index):
     # select pattern
     self.config.i2c.writeto_mem(ADDRESS, REG_PATTERN_INDEX, bytes([pattern_index]))
-    
     # disable direct control
     self.config.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([0]))
+
+  def set_fill(self, level):
+    self.config.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([8] + [level] * 156))
+
+  def set_default_pattern(self):
+    self.set_pattern(2)
 
   @staticmethod
   def match_header(header: HexpansionHeader):
@@ -30,6 +35,6 @@ class LiteLoopBoard (Board):
   def patterns():
     return [
       (0, "Fill"),
-      (1, "Count scroll"),
+      (1, "Spirit level"),
       (2, "Starfield"),
     ]

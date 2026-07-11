@@ -2,6 +2,7 @@ import math
 import re
 import os
 from app_components import Menu, Notification, tokens
+import time
 
 # MAIN
 #  ALL OFF
@@ -41,13 +42,12 @@ MENU_FIRMWARE_UPDATE_IMAGE = "Firmware update image"
 MENU_HELP = "Help"
 MENU_PATTERN_PORT = "Pattern port"
 MENU_PATTERN_PATTERN = "Pattern"
-MENU_ALL_OFF = "All off"
-MENU_ALL_DEFAULT = "All default"
 MENU_TEXT = "Text"
 
 # Menu item names, only for display, don't have to be unique
 ALL_OFF = "All off"
 ALL_DEFAULT = "All to default"
+ALL_LEVEL = "All low" # TODO may change this to a sub menu selecting a level
 TEXT = "Text"
 PATTERN = "Pattern"
 FIRMWARE_UPDATE = "Firmware update"
@@ -136,11 +136,34 @@ class MatrixHexpansionMenu:
 
   def get_menu_items(self, menu_name):
     if menu_name == MENU_MAIN:
+      def all_level(level):
+        self.app.scan_boards()
+        print(f"Turning {len(self.app.boards)} boards off")
+        for board in self.app.boards:
+          try:
+            board.set_fill(level)
+          except Exception as e:
+            print("error setting static fill", e)
+        time.sleep(0.05)
+        self.notification = Notification(ALL_LEVEL + f" {level}")
+
+      def all_default():
+        self.app.scan_boards()
+        print(f"Setting default pattern on {len(self.app.boards)} boards")
+        for board in self.app.boards:
+          try:
+            board.set_default_pattern()
+          except Exception as e:
+            print("error setting default pattern", e)
+        time.sleep(0.05)
+        self.notification = Notification(ALL_DEFAULT)
+
       return [
-        (ALL_OFF, lambda: self.set_menu(MENU_ALL_OFF)),
-        (ALL_DEFAULT, lambda: self.set_menu(MENU_ALL_DEFAULT)),
+        (ALL_LEVEL, lambda: all_level(1)),
+        (ALL_DEFAULT, lambda: all_default()),
         (TEXT, lambda: self.set_menu(MENU_TEXT)),
         (PATTERN, lambda: self.set_menu(MENU_PATTERN_PORT)),
+        (ALL_OFF, lambda: all_level(0)),
         (FIRMWARE_UPDATE, lambda: self.set_menu(MENU_FIRMWARE_UPDATE_PORT)),
         (HELP, lambda: self.set_menu(MENU_HELP)),
         (SETTINGS, lambda: self.set_menu(SETTINGS)),

@@ -20,6 +20,12 @@ class Board:
   def flash_firmware(self, image: str):
     return MatrixHexpansionFirmware(self.port).flash_firmware(image)
 
+  def set_fill(level: int):
+    pass
+
+  def set_pattern(index: int):
+    pass
+
   def __str__(self):
     return f"{self.port}: {self.name()}"
 
