@@ -1,4 +1,4 @@
-from . import blit32 as BlitFont
+from . import blit16 as BlitFont
 
 class TextDisplay:
   def __init__(self, board):

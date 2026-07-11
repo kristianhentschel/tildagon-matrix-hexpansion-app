@@ -226,10 +226,10 @@ class MatrixHexpansionMenu:
           print(f"{text} for port {board.port}")
           try:
             t = TextDisplay(board)
-            t.render(text, offset=dx) # TODO expose grid width without having to get the full matrix()
+            t.render(text, offset=dx)
             t.display()
             time.sleep(0.05)
-            dx += board.matrix()["cols"]
+            dx += board.matrix()["cols"] # TODO expose grid width without having to get the full matrix()
           except Exception as e:
             print(f"Failed to render text on {board.port}: {e}")
 
