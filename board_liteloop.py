@@ -4,6 +4,7 @@ from .board import Board
 
 ADDRESS = 0x20
 
+NUM_LEDS = 156
 REG_PATTERN_INDEX = 0x37
 REG_DIRECT_CONTROL = 0x50
 
@@ -18,14 +19,34 @@ class LiteLoopBoard (Board):
     self.config.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([0]))
 
   def set_fill(self, level):
-    self.config.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([8] + [level] * 156))
+    self.config.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([8] + [level] * NUM_LEDS))
 
   def set_default_pattern(self):
     self.set_pattern(2)
 
   def set_image(self, values):
     print("liteloop set_image")
-    self.config.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([8] + values[0:156]))
+    self.config.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([8] + values[0:NUM_LEDS]))
+
+  def set_text(self, text, font="blit16", offset=18):
+    print("liteloop set_text")
+    # text contents in direct control area
+    self.config.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([0]) + text[0:NUM_LEDS - 1] + b"\0")
+    
+    # animation type text, and configuration for font and offset
+    flags = 0x00
+    if font == "blit32":
+      flags |= 0x01
+
+    self.config.i2c.writeto_mem(ADDRESS, REG_PATTERN_INDEX, bytes([
+      0x03, # 0x37 pattern index
+      (offset >> 8) & 0xff, # 0x38 offset high
+      offset & 0xff, # 0x39 offset low
+      flags, # 0x40 flags
+    ]))
+
+    if len(text) >= NUM_LEDS:
+      print(f"Warning: text too long {len(text)}, will be truncated after {NUM_LEDS -1}")
 
   @staticmethod
   def match_header(header: HexpansionHeader):
@@ -41,6 +62,7 @@ class LiteLoopBoard (Board):
       (0, "Fill"),
       (1, "Spirit level"),
       (2, "Starfield"),
+      # 3, text (uses set_text method instead)
     ]
 
   @staticmethod

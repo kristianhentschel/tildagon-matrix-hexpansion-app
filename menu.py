@@ -221,17 +221,23 @@ class MatrixHexpansionMenu:
     elif menu_name == MENU_TEXT:
       def display_text(text):
         self.app.scan_boards()
-        dx = 0
+        dx = 18 # on first board it should be offset to fully display as it is not scrolling text yet
         for board in reversed(self.app.boards): # reversed to go in left to right order with baseline outwards
           print(f"{text} for port {board.port}")
-          try:
-            t = TextDisplay(board)
-            t.render(text, offset=dx, font="blit32" if len(text) < 8 else "blit16")
-            t.display()
-            time.sleep(0.05)
-            dx += board.matrix()["cols"] # TODO expose grid width without having to get the full matrix()
+          try: 
+            board.set_text(text, font="blit16", offset=dx)
+            dx += board.matrix()["cols"]
           except Exception as e:
             print(f"Failed to render text on {board.port}: {e}")
+            break
+          # try:
+          #   t = TextDisplay(board)
+          #   t.render(text, offset=dx, font="blit32" if len(text) < 8 else "blit16")
+          #   t.display()
+          #   time.sleep(0.05)
+          #   dx += board.matrix()["cols"] # TODO expose grid width without having to get the full matrix()
+          # except Exception as e:
+          #   print(f"Failed to render text on {board.port}: {e}")
 
       lines = [
         "EMF",
@@ -239,9 +245,10 @@ class MatrixHexpansionMenu:
         "#badgelife",
         "Chillin'",
         "LEDbury",
-        "You too can be a billboard    Buy a matrix hexpansion today",
-        "This is the void chat, crossing the spectrum. The field is against her but she's on time. Letters for the rich, letters for the poor, the dome at the corner, and the ducks next door. Half a million spiders are picked up, sorted, or dropped during the night.",
+        "You too can be a walking billboard\nBuy your matrix hexpansion today",
+        "This is the void chat, crossing the spectrum.\nThe field is against her but she's on time.\nLetters for the rich, letters for the poor,\nthe dome at the corner, and the ducks next door.\nHalf a million spiders are sorted, picked up, or dropped during the night.",
         "You know the rules, and so do I",
+        "Help I'm stuck in a hexpansion assembly line",
       ]
 
       return [
