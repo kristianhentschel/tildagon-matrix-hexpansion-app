@@ -26,6 +26,17 @@ class Board:
   def set_pattern(index: int):
     pass
 
+  def set_image(values: list):
+    pass
+
+  @staticmethod
+  def matrix():
+    return {
+      "rows": 0,
+      "cols": 0,
+      "grid": []
+    }
+
   def __str__(self):
     return f"{self.port}: {self.name()}"
 

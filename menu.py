@@ -3,6 +3,7 @@ import re
 import os
 from app_components import Menu, Notification, tokens
 import time
+from .text import TextDisplay
 
 # MAIN
 #  ALL OFF
@@ -216,6 +217,37 @@ class MatrixHexpansionMenu:
       # TODO firmware upgrade progress, error handling
       return [
         (image_name, lambda image_path=image_path: flash_firmware(image_path)) for image_name, image_path in images
+      ]
+    elif menu_name == MENU_TEXT:
+      def display_text(text):
+        self.app.scan_boards()
+        dx = 0
+        for board in reversed(self.app.boards): # reversed to go in left to right order with baseline outwards
+          print(f"{text} for port {board.port}")
+          try:
+            t = TextDisplay(board)
+            t.render(text, offset=dx) # TODO expose grid width without having to get the full matrix()
+            t.display()
+            time.sleep(0.05)
+            dx += board.matrix()["cols"]
+          except Exception as e:
+            print(f"Failed to render text on {board.port}: {e}")
+
+      lines = [
+        "#EMFCamp",
+        "#badgelife",
+        "Chillin'",
+        "302 LEDbury",
+        "200 EMFCamp",
+        "10 PRINT",
+        "You wouldn't download a car",
+        "You too can be a billboard    Buy a matrix hexpansion today",
+        "This is the void chat, crossing the spectrum. The field is against her but she's on time. Letters for the rich, letters for the poor, the dome at the corner, and the ducks next door. Half a million spiders are picked up, sorted, or dropped during the night.",
+        "You know the rules, and so do I",
+      ]
+
+      return [
+        (line if len(line) < 20 else line[0:18] + "...", lambda line=line: display_text(line)) for line in lines
       ]
     else:
       return [
