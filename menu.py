@@ -226,7 +226,7 @@ class MatrixHexpansionMenu:
           print(f"{text} for port {board.port}")
           try:
             t = TextDisplay(board)
-            t.render(text, offset=dx)
+            t.render(text, offset=dx, font="blit32" if len(text) < 8 else "blit16")
             t.display()
             time.sleep(0.05)
             dx += board.matrix()["cols"] # TODO expose grid width without having to get the full matrix()
@@ -234,13 +234,11 @@ class MatrixHexpansionMenu:
             print(f"Failed to render text on {board.port}: {e}")
 
       lines = [
+        "EMF",
         "#EMFCamp",
         "#badgelife",
         "Chillin'",
-        "302 LEDbury",
-        "200 EMFCamp",
-        "10 PRINT",
-        "You wouldn't download a car",
+        "LEDbury",
         "You too can be a billboard    Buy a matrix hexpansion today",
         "This is the void chat, crossing the spectrum. The field is against her but she's on time. Letters for the rich, letters for the poor, the dome at the corner, and the ducks next door. Half a million spiders are picked up, sorted, or dropped during the night.",
         "You know the rules, and so do I",

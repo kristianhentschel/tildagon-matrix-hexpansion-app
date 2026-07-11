@@ -1,4 +1,4 @@
-from . import blit16 as BlitFont
+from . import blit16, blit32
 
 class TextDisplay:
   def __init__(self, board):
@@ -9,7 +9,10 @@ class TextDisplay:
     self.grid = matrix["grid"]
     self.buffer = [0] * len([1 for x in self.grid if x is not None])
 
-  def render(self, text, offset=0):
+  def render(self, text, offset=0, font="blit16"):
+    BlitFont = blit16
+    if font == "blit32":
+      BlitFont = blit32
     dx = -offset
     for c in text:
       if dx < -1 * BlitFont.WIDTH:
@@ -25,7 +28,7 @@ class TextDisplay:
       shiftY = glyph >> (BlitFont.WIDTH * BlitFont.HEIGHT) & 0x03 # TODO extra bits helper fn
       # encoding is by row
       for i in range(BlitFont.HEIGHT):
-        row = i + shiftY + 1
+        row = (8 - min(2, BlitFont.DESCENDER) - BlitFont.HEIGHT) + i + shiftY
         row_bits = glyph >> BlitFont.WIDTH * i & 0x1f # TODO mask also depends on WIDTH
         print(f"Row {row} bits: {''.join(['#' if row_bits & (0x01 << x) else ' ' for x in range(BlitFont.WIDTH)])}")
         
