@@ -77,25 +77,39 @@ class MatrixHexpansionFirmware:
             
         num_pages = math.ceil(len(data) / 256)
 
-        # Write status register address; read status register
-        self.i2c.writeto(BOOTLOADER_ADDRESS, bytes([0x00, 0x00]))
-        print(f"Bootloader status registers: {self.i2c.readfrom(BOOTLOADER_ADDRESS, 8).hex()}")
+        # # Write status register address; read status register
+        # self.i2c.writeto(BOOTLOADER_ADDRESS, bytes([0x00, 0x00]))
+        # print(f"Bootloader status registers: {self.i2c.readfrom(BOOTLOADER_ADDRESS, 8).hex()}")
 
         # TODO verify flash size and MCU model matches image, perhaps by filename convention
 
         for i in range(num_pages):
           self.set_led_colour(COLOUR_WRITING if i % 2 == 1 else COLOUR_WRITING_2)
 
-          print(f"writing page {i + 1} / {num_pages}")
+          print(f"Writing page {i + 1} / {num_pages}")
           
           # Write page address (0x0100-0x01FF) and page contents
-          self.i2c.writeto(BOOTLOADER_ADDRESS, bytes([0x01, i]) + page(i))
+          page_data = page(i)
+          self.i2c.writeto(BOOTLOADER_ADDRESS, bytes([0x01, i]) + page_data)
+
+          # Read status
+          self.i2c.writeto(BOOTLOADER_ADDRESS, bytes([0x00, 0x00]))
+          print(f"Bootloader status registers: {self.i2c.readfrom(BOOTLOADER_ADDRESS, 8).hex()}")
+
+          # Read page just written
+          self.i2c.writeto(BOOTLOADER_ADDRESS, bytes([0x02, i]))
+          page_read_data = self.i2c.readfrom(BOOTLOADER_ADDRESS, 256)
+          for j in range(16):
+            print(f"page {bytes([i]).hex()} offset {bytes([j * 16]).hex()} Written: {page_data[16*j:16*(j+1)].hex()} Read:    {page_read_data[16*j:16*(j+1)].hex()}")
+
+          print(f"Match: {page_read_data == page_data}")
+
 
         # TODO verify programmed image
         self.set_led_colour(COLOUR_DONE)
         print(f"Firmware upgrade complete")
         
-      # TODO need to do anything to reboot into user code now, or power cycle again?
+        # TODO need to do anything to reboot into user code now, or power cycle again?
         return None
     except Exception as e:
       self.set_led_colour(COLOUR_ERROR)

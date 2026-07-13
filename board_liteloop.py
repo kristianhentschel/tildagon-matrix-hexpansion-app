@@ -19,6 +19,7 @@ class LiteLoopBoard (Board):
     self.config.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([0]))
 
   def set_fill(self, level):
+    # TODO firmware support to set this with two bytes perhaps with a special flag in reg direct control
     self.config.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([8] + [level] * NUM_LEDS))
 
   def set_default_pattern(self):

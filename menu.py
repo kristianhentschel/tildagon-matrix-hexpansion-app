@@ -44,11 +44,11 @@ MENU_HELP = "Help"
 MENU_PATTERN_PORT = "Pattern port"
 MENU_PATTERN_PATTERN = "Pattern"
 MENU_TEXT = "Text"
+MENU_STATIC = "Static"
 
 # Menu item names, only for display, don't have to be unique
-ALL_OFF = "All off"
 ALL_DEFAULT = "All to default"
-ALL_LEVEL = "All low" # TODO may change this to a sub menu selecting a level
+ALL_STATIC = "All static"
 TEXT = "Text"
 PATTERN = "Pattern"
 FIRMWARE_UPDATE = "Firmware update"
@@ -137,17 +137,6 @@ class MatrixHexpansionMenu:
 
   def get_menu_items(self, menu_name):
     if menu_name == MENU_MAIN:
-      def all_level(level):
-        self.app.scan_boards()
-        print(f"Turning {len(self.app.boards)} boards off")
-        for board in self.app.boards:
-          try:
-            board.set_fill(level)
-          except Exception as e:
-            print("error setting static fill", e)
-        time.sleep(0.05)
-        self.notification = Notification(ALL_LEVEL + f" {level}")
-
       def all_default():
         self.app.scan_boards()
         print(f"Setting default pattern on {len(self.app.boards)} boards")
@@ -160,11 +149,10 @@ class MatrixHexpansionMenu:
         self.notification = Notification(ALL_DEFAULT)
 
       return [
-        (ALL_LEVEL, lambda: all_level(1)),
+        (ALL_STATIC, lambda: self.set_menu(MENU_STATIC)),
         (ALL_DEFAULT, lambda: all_default()),
         (TEXT, lambda: self.set_menu(MENU_TEXT)),
         (PATTERN, lambda: self.set_menu(MENU_PATTERN_PORT)),
-        (ALL_OFF, lambda: all_level(0)),
         (FIRMWARE_UPDATE, lambda: self.set_menu(MENU_FIRMWARE_UPDATE_PORT)),
         (HELP, lambda: self.set_menu(MENU_HELP)),
         (SETTINGS, lambda: self.set_menu(SETTINGS)),
@@ -189,6 +177,18 @@ class MatrixHexpansionMenu:
       except Exception as e:
         print(e)
         return [(NOT_FOUND, None)]
+    elif menu_name == MENU_STATIC:
+      def all_static(level):
+        self.app.scan_boards()
+        for board in self.app.boards:
+          try:
+            board.set_fill(level)
+          except Exception as e:
+            print("error setting static fill", e)
+        time.sleep(0.05)
+        self.notification = Notification(ALL_STATIC + f" {level}")
+
+      return [(f"{level}", lambda level=level: all_static(level)) for level in [0, 1, 31, 63, 127, 255]]
     elif menu_name == MENU_FIRMWARE_UPDATE_PORT:
       return self.get_boards_menu_items(MENU_FIRMWARE_UPDATE_IMAGE, include_unknown=True, include_unresponsive=True)
     elif menu_name == MENU_FIRMWARE_UPDATE_IMAGE:
@@ -242,12 +242,13 @@ class MatrixHexpansionMenu:
       lines = [
         "EMF",
         "#EMFCamp",
-        "#badgelife",
         "Chillin'",
         "LEDbury",
-        "You too can be a walking billboard\nBuy your matrix hexpansion today",
-        "This is the void chat, crossing the spectrum.\nThe field is against her but she's on time.\nLetters for the rich, letters for the poor,\nthe dome at the corner, and the ducks next door.\nHalf a million spiders are sorted, picked up, or dropped during the night.",
+        "#badgelife",
+        "HACK THE PLANET",
         "You know the rules, and so do I",
+        "You too can be a walking billboard... buy a matrix hexpansion today!",
+        "This is the void chat, crossing the spectrum.\nThe field is against her but she's on time.\nLetters for the rich, letters for the poor,\nthe dome at the corner, and the ducks next door.\nHalf a million spiders are sorted, picked up, or dropped during the night.",
         "Help I'm stuck in a hexpansion assembly line",
       ]
 
