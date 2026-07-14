@@ -1,6 +1,7 @@
 from . import blit16, blit32
 
-class TextDisplay:
+class TextRenderer:
+  """ (not used) text renderer; text is now rendered on the hexpansion instead. """
   def __init__(self, board):
     self.board = board
     matrix = board.matrix()

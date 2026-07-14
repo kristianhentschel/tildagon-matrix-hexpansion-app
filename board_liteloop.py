@@ -55,15 +55,15 @@ class LiteLoopBoard (Board):
 
   @staticmethod
   def name():
-    return "lite-loop"
+    return "Liteloop"
 
   @staticmethod
   def patterns():
     return [
       (0, "Fill"),
-      (1, "Spirit level"),
+      # (1, "Spirit level"), # TODO pattern using IMU not implemented yet
       (2, "Starfield"),
-      # 3, text (uses set_text method instead)
+      # (3, "Text"), # (this is used by the set_text method instead as it needs extra data)
     ]
 
   @staticmethod

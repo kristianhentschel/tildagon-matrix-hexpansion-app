@@ -3,38 +3,9 @@ import re
 import os
 from app_components import Menu, Notification, tokens
 import time
-from .text import TextDisplay
 
-# MAIN
-#  ALL OFF
-#  ALL DEFAULT
-#  TEXT
-#   ENTER TEXT
-#   SELECT TEXT
-#     TEXTS
-#       SCROLL ONCE
-#       DISPLAY STATIC
-#       COPY
-#         EDIT TEXT
-#       REMOVE
-#  PATTERN
-#    ALL [BOARD]
-#      PATTERN
-#    PORT x [BOARD]
-#      PATTERN
-#  FIRMWARE UPDATE
-#   IMAGE
-#    SLOT
-#     CONFIRM
-#  HELP
-#  SETTINGS
-#   Clear default assignments
-#   Clear saved texts
-#   Accept text from other apps
-#   Accept images from other apps
-#   React to emote events
-
-ASSET_PATH="/apps/kristianhentschel_tildagon_matrix_hexpansion_app/assets/"
+ASSET_PATH="/".join(__file__.split("/")[:-1]) + "/assets/"
+print(f"ASSET_PATH={ASSET_PATH}")
 
 # Menu names, may be displayed but must also be unique
 MENU_MAIN = "Main"
@@ -48,7 +19,7 @@ MENU_STATIC = "Static"
 
 # Menu item names, only for display, don't have to be unique
 ALL_DEFAULT = "All to default"
-ALL_STATIC = "All static"
+ALL_STATIC = "All to constant"
 TEXT = "Text"
 PATTERN = "Pattern"
 FIRMWARE_UPDATE = "Firmware update"
@@ -153,7 +124,8 @@ class MatrixHexpansionMenu:
         (ALL_DEFAULT, lambda: all_default()),
         (TEXT, lambda: self.set_menu(MENU_TEXT)),
         (PATTERN, lambda: self.set_menu(MENU_PATTERN_PORT)),
-        (FIRMWARE_UPDATE, lambda: self.set_menu(MENU_FIRMWARE_UPDATE_PORT)),
+        # TODO firmware update menu hidden as the upload or bootloader is currently broken
+        # (FIRMWARE_UPDATE, lambda: self.set_menu(MENU_FIRMWARE_UPDATE_PORT)),
         (HELP, lambda: self.set_menu(MENU_HELP)),
         (SETTINGS, lambda: self.set_menu(SETTINGS)),
       ]
@@ -188,7 +160,18 @@ class MatrixHexpansionMenu:
         time.sleep(0.05)
         self.notification = Notification(ALL_STATIC + f" {level}")
 
-      return [(f"{level}", lambda level=level: all_static(level)) for level in [0, 1, 31, 63, 127, 255]]
+      return [(f"{label}", lambda level=level: all_static(level)) for label, level in [
+        ("0 (off)", 0),
+        (1, 1),
+        (2, 2),
+        (4, 4),
+        (8, 8),
+        (16, 16),
+        (32, 32),
+        (64, 64),
+        (128, 128),
+        ("255 (100%)", 255),
+      ]]
     elif menu_name == MENU_FIRMWARE_UPDATE_PORT:
       return self.get_boards_menu_items(MENU_FIRMWARE_UPDATE_IMAGE, include_unknown=True, include_unresponsive=True)
     elif menu_name == MENU_FIRMWARE_UPDATE_IMAGE:
@@ -248,12 +231,22 @@ class MatrixHexpansionMenu:
         "HACK THE PLANET",
         "You know the rules, and so do I",
         "You too can be a walking billboard... buy a matrix hexpansion today!",
-        "This is the void chat, crossing the spectrum.\nThe field is against her but she's on time.\nLetters for the rich, letters for the poor,\nthe dome at the corner, and the ducks next door.\nHalf a million spiders are sorted, picked up, or dropped during the night.",
         "Help I'm stuck in a hexpansion assembly line",
       ]
 
       return [
         (line if len(line) < 20 else line[0:18] + "...", lambda line=line: display_text(line)) for line in lines
+      ]
+    elif menu_name == MENU_HELP:
+      return [
+        # TODO build a proper help screen layout, abusing existing menu system for now
+        ("5yk.de/matrix-hexpansion", None)
+      ]
+    elif menu_name == SETTINGS:
+      # TODO implement settings
+      return [
+        ("Settings", None),
+        ("Not yet implemented", None),
       ]
     else:
       return [
