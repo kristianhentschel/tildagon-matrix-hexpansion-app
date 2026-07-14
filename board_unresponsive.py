@@ -20,7 +20,7 @@ class UnresponsiveBoard (Board):
 
   @staticmethod
   def name():
-    return "unresponsive"
+    return "No I2C/header"
 
   @staticmethod
   def patterns():

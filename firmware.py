@@ -11,6 +11,7 @@ COLOUR_WRITING = [32, 32, 255]
 COLOUR_WRITING_2 = [32, 32, 32]
 COLOUR_ERROR = [127, 32, 0]
 COLOUR_DONE = [0, 127, 32]
+COLOUR_OFF = [0, 0, 0]
 
 PORT_ND_PINS = [
   EPIN_ND_A,
@@ -21,100 +22,145 @@ PORT_ND_PINS = [
   EPIN_ND_F,
 ]
 
-def port_is_used(port):
-  nd_pin = ePin(PORT_ND_PINS[port - 1])
-  return nd_pin.value() == 0
-
 class MatrixHexpansionFirmware:
   def __init__(self, port):
     self.config = HexpansionConfig(port)
     self.port = self.config.port
     self.i2c = self.config.i2c
 
-    self.led = 12 + self.port
-    self.nd_pin = ePin(PORT_ND_PINS[self.port - 1])
 
-  def set_led_colour(self, colour):
-    tildagonos.leds[self.led] = colour
+  @staticmethod
+  def port_is_used(port):
+    """ Checks if a hexpansion is detected in the given port """
+    nd_pin = ePin(PORT_ND_PINS[port - 1])
+    return nd_pin.value() == 0
+
+  @staticmethod
+  def set_port_led(port, colour):
+    """ Sets the LED associated with that port to a specific colour """
+    led = 12 + port
+    tildagonos.leds[led] = colour
     tildagonos.leds.write()
 
-  def flash_firmware(self, image: str):
-    bootloader_pin = self.config.pin[1]
-    power_pin = self.nd_pin
-
+  @staticmethod
+  def reboot_port(port, bootloader=False):
+    """ Cuts power to the hexpansion port briefly and sets the bootloader request pin if needed """
     try:
-      # Power cycle board and hold PD7 (HS_G) low during boot to enter bootloader
-      power_pin.init(mode=bootloader_pin.OUT)
+      config = HexpansionConfig(port)
+      power_pin = ePin(PORT_ND_PINS[port - 1])
+      bootloader_pin = config.pin[1]
+
+      MatrixHexpansionFirmware.set_port_led(port, COLOUR_BOOTING)
+      # turn off power to the hexpansion
+      power_pin.init(mode=power_pin.OUT)
       power_pin.on() # active low
-      self.set_led_colour(COLOUR_BOOTING)
+
+      # request to access bootloader mode by pulling that pin low
+      if bootloader:
+        bootloader_pin.init(mode=bootloader_pin.OUT)
+        bootloader_pin.off()
+
+      time.sleep(0.25)
+    finally:
+      MatrixHexpansionFirmware.set_port_led(port, COLOUR_OFF)
+
+      # turn power back on (if a hexpansion is plugged in it pulls the pin low if it is configured as an input)
+      power_pin.init(mode=power_pin.IN)
       time.sleep(0.25)
 
-      bootloader_pin.init(mode=bootloader_pin.OUT)
-      bootloader_pin.off()
+      # Reset bootloader pin to input (to not interfere with matrix operations)
+      bootloader_pin.init(mode=bootloader_pin.IN)
 
-      power_pin.init(mode=power_pin.IN) # will be pulled low again if hexpansion is inserted
-      time.sleep(0.25)
 
-      scan_result = self.i2c.scan()
-      if not BOOTLOADER_ADDRESS in scan_result:
+  @staticmethod
+  def bootloader_is_present(port):
+    """ Checks if the bootloader responds at the expected I2C address """
+    config = HexpansionConfig(port)
+    return BOOTLOADER_ADDRESS in config.i2c.scan()
+
+  @staticmethod
+  def read_bootloader_status(port):
+    config = HexpansionConfig(port)
+    i2c = config.i2c
+
+    # Read status
+    i2c.writeto(BOOTLOADER_ADDRESS, bytes([0x00, 0x00]))
+    data = i2c.readfrom(BOOTLOADER_ADDRESS, 8).hex()
+
+    return {
+      "bytes": data
+      # TODO parse chip id, memory size, last page written from response
+    }
+
+  @staticmethod
+  def upload_image(port, image, verify=False, garbage=None):
+    config = HexpansionConfig(port)
+    i2c = config.i2c
+
+    with open(image, "rb") as f:
+      data = f.read()
+      print(f"Flashing {round(len(data) / 1024, 1)}K {image} to hexpansion on {port}")
+
+      def page(n):
+        start = n * 256
+        end = start + 256
+        if end < len(data):
+          return data[start:end]
+        if start >= len(data):
+          return b"\x00" * 256
+        else:
+          return data[start:len(data)] + b"\x00" * (end - len(data))
+            
+      num_pages = math.ceil(len(data) / 256)
+
+      for i in range(num_pages):
+        MatrixHexpansionFirmware.set_port_led(port, COLOUR_WRITING if i % 2 == 1 else COLOUR_WRITING_2)
+
+        print(f"Writing page {i + 1} / {num_pages}")
+        
+        time.sleep(0.5) # TODO shouldn't be needed but perhaps I messed up the bootloader sequence...
+        
+        # Write page address (0x0100-0x01FF) and page contents
+        page_data = page(i)
+        
+        if garbage is not None:
+          page_data = bytes([int(garbage)] * 256)
+
+        # print(f"Page {i}: {len(page_data)} bytes: {page_data.hex()}")
+        i2c.writeto(BOOTLOADER_ADDRESS, bytes([0x01, i]) + page_data)
+
+        # Read page just written
+        i2c.writeto(BOOTLOADER_ADDRESS, bytes([0x02, i]))
+        page_read_data = i2c.readfrom(BOOTLOADER_ADDRESS, 256)
+
+        # for j in range(16):
+        #   print(f"page {bytes([i]).hex()} offset {bytes([j * 16]).hex()} Written: {page_data[16*j:16*(j+1)].hex()} Read:    {page_read_data[16*j:16*(j+1)].hex()}")
+
+        if page_read_data != page_data:
+          if verify:
+            raise Exception(f"Verification failed at page {i}")
+          else:
+            print(f"Page {i} data mismatch, continuing...")
+
+
+  def flash_firmware(self, image: str):
+    try:
+      self.reboot_port(self.port, bootloader=True)
+
+      if not self.bootloader_is_present(self.port):
         raise Exception(f"Bootloader not active on I2C address 0x{bytes([BOOTLOADER_ADDRESS]).hex()}")
 
-      self.set_led_colour(COLOUR_WRITING)
-      # Read the firmware image from the file system and flash it
-      with open(image, "rb") as f:
-        data = f.read()
-        print(f"Flashing {round(len(data) / 1024, 1)}K {image} to hexpansion on {self.port}")
+      self.set_port_led(self.port, COLOUR_WRITING)
 
-        def page(n):
-          start = n * 256
-          end = start + 256
-          if end < len(data):
-            return data[start:end]
-          if start >= len(data):
-            return b"\x00" * 256
-          else:
-            return data[start:len(data)] + b"\x00" * (end - len(data))
-            
-        num_pages = math.ceil(len(data) / 256)
+      self.upload_image(self.port, image, verify=True)
 
-        # # Write status register address; read status register
-        # self.i2c.writeto(BOOTLOADER_ADDRESS, bytes([0x00, 0x00]))
-        # print(f"Bootloader status registers: {self.i2c.readfrom(BOOTLOADER_ADDRESS, 8).hex()}")
+      self.set_port_led(self.port, COLOUR_DONE)
 
-        # TODO verify flash size and MCU model matches image, perhaps by filename convention
-
-        for i in range(num_pages):
-          self.set_led_colour(COLOUR_WRITING if i % 2 == 1 else COLOUR_WRITING_2)
-
-          print(f"Writing page {i + 1} / {num_pages}")
-          
-          # Write page address (0x0100-0x01FF) and page contents
-          page_data = page(i)
-          self.i2c.writeto(BOOTLOADER_ADDRESS, bytes([0x01, i]) + page_data)
-
-          # Read status
-          self.i2c.writeto(BOOTLOADER_ADDRESS, bytes([0x00, 0x00]))
-          print(f"Bootloader status registers: {self.i2c.readfrom(BOOTLOADER_ADDRESS, 8).hex()}")
-
-          # Read page just written
-          self.i2c.writeto(BOOTLOADER_ADDRESS, bytes([0x02, i]))
-          page_read_data = self.i2c.readfrom(BOOTLOADER_ADDRESS, 256)
-          for j in range(16):
-            print(f"page {bytes([i]).hex()} offset {bytes([j * 16]).hex()} Written: {page_data[16*j:16*(j+1)].hex()} Read:    {page_read_data[16*j:16*(j+1)].hex()}")
-
-          print(f"Match: {page_read_data == page_data}")
-
-
-        # TODO verify programmed image
-        self.set_led_colour(COLOUR_DONE)
-        print(f"Firmware upgrade complete")
+      print(f"Firmware upgrade complete")
         
-        # TODO need to do anything to reboot into user code now, or power cycle again?
-        return None
     except Exception as e:
-      self.set_led_colour(COLOUR_ERROR)
+      self.set_port_led(self.port, COLOUR_ERROR)
       return f"Upgrade failed: {e}"
     finally:
       # ensure badge pins are configured as inputs again
-      power_pin.init(mode=self.nd_pin.IN)
-      bootloader_pin.init(mode=bootloader_pin.IN)
+      self.reboot_port(self.port, bootloader=False)

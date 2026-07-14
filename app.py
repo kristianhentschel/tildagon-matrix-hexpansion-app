@@ -10,7 +10,7 @@ from app_components import clear_background
 
 from .menu import MatrixHexpansionMenu
 from .events import MatrixHexpansionToast
-from .firmware import port_is_used
+from .firmware import MatrixHexpansionFirmware
 from .board_liteloop import LiteLoopBoard
 from .board_unknown import UnknownBoard
 from .board_unresponsive import UnresponsiveBoard
@@ -68,7 +68,7 @@ class MatrixHexpansionApp(app.App):
         else:
           # unknown board with a header though, get friendly name
           results.append(UnknownBoard(HexpansionConfig(port), header))
-      elif port_is_used(port):
+      elif MatrixHexpansionFirmware.port_is_used(port):
         # no header, but perhaps one that could be flashed
         results.append(UnresponsiveBoard(HexpansionConfig(port), None))
       else:

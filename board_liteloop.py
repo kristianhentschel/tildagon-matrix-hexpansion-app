@@ -14,32 +14,32 @@ class LiteLoopBoard (Board):
 
   def set_pattern(self, pattern_index):
     # select pattern
-    self.config.i2c.writeto_mem(ADDRESS, REG_PATTERN_INDEX, bytes([pattern_index]))
+    self.i2c.writeto_mem(ADDRESS, REG_PATTERN_INDEX, bytes([pattern_index]))
     # disable direct control
-    self.config.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([0]))
+    self.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([0]))
 
   def set_fill(self, level):
     # TODO firmware support to set this with two bytes perhaps with a special flag in reg direct control
-    self.config.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([8] + [level] * NUM_LEDS))
+    self.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([8] + [level] * NUM_LEDS))
 
   def set_default_pattern(self):
     self.set_pattern(2)
 
   def set_image(self, values):
     print("liteloop set_image")
-    self.config.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([8] + values[0:NUM_LEDS]))
+    self.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([8] + values[0:NUM_LEDS]))
 
   def set_text(self, text, font="blit16", offset=18):
     print("liteloop set_text")
     # text contents in direct control area
-    self.config.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([0]) + text[0:NUM_LEDS - 1] + b"\0")
+    self.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([0]) + text[0:NUM_LEDS - 1] + b"\0")
     
     # animation type text, and configuration for font and offset
     flags = 0x00
     if font == "blit32":
       flags |= 0x01
 
-    self.config.i2c.writeto_mem(ADDRESS, REG_PATTERN_INDEX, bytes([
+    self.i2c.writeto_mem(ADDRESS, REG_PATTERN_INDEX, bytes([
       0x03, # 0x37 pattern index
       (offset >> 8) & 0xff, # 0x38 offset high
       offset & 0xff, # 0x39 offset low

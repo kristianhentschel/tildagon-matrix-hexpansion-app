@@ -21,7 +21,7 @@ class UnknownBoard (Board):
 
   @staticmethod
   def name():
-    return "unknown"
+    return "unrecognised VID/PID"
 
   @staticmethod
   def patterns():

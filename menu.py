@@ -270,9 +270,6 @@ class MatrixHexpansionMenu:
       # this implicitly also filters out unresponsive and unknown because they have no patterns
       filtered_boards = [board for board in filtered_boards if len(board.patterns()) > 0]
 
-    # TODO filter out unknown and unresponsive by default
-    print("got board items", next_menu, self.app.boards, filtered_boards)
-
     if len(filtered_boards) == 0:
       return [(NOT_FOUND, None)]
 
