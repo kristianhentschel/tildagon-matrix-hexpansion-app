@@ -9,7 +9,6 @@ REG_DIRECT_CONTROL = 0x50
 
 class UnknownBoard (Board):
   def __init__(self, config: HexpansionConfig, header: HexpansionHeader):
-    # TODO: may not have a header at all, would we still use this this calss
     super().__init__(config, header)
 
   def set_pattern(self, pattern_index):
@@ -21,7 +20,7 @@ class UnknownBoard (Board):
 
   @staticmethod
   def name():
-    return "unrecognised VID/PID"
+    return "Unsupported hexpansion"
 
   @staticmethod
   def patterns():

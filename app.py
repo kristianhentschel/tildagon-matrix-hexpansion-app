@@ -56,7 +56,11 @@ class MatrixHexpansionApp(app.App):
     results = []
     for port in range(1, 7):
       i2c = I2C(port)
-      header = read_hexpansion_header(i2c, eeprom_addr=EEPROM_ADDRESS)
+      try:
+        header = read_hexpansion_header(i2c, eeprom_addr=EEPROM_ADDRESS)
+      except Exception as e:
+        print(e)
+        header = None
       if header:
         print(port, VID, header.vid, PID, header.pid, header.friendly_name)
         if header.vid == VID and header.pid == PID:

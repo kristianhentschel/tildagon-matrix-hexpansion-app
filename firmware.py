@@ -93,6 +93,21 @@ class MatrixHexpansionFirmware:
     }
 
   @staticmethod
+  def get_num_pages(data):
+    return math.ceil(len(data) / 256)
+
+  @staticmethod
+  def get_page_data(data, i):
+    start = i * 256
+    end = start + 256
+    if end < len(data):
+      return data[start:end]
+    if start >= len(data):
+      return b"\x00" * 256
+    else:
+      return data[start:len(data)] + b"\x00" * (end - len(data))
+
+  @staticmethod
   def upload_image(port, image, verify=False, garbage=None):
     config = HexpansionConfig(port)
     i2c = config.i2c
@@ -101,27 +116,14 @@ class MatrixHexpansionFirmware:
       data = f.read()
       print(f"Flashing {round(len(data) / 1024, 1)}K {image} to hexpansion on {port}")
 
-      def page(n):
-        start = n * 256
-        end = start + 256
-        if end < len(data):
-          return data[start:end]
-        if start >= len(data):
-          return b"\x00" * 256
-        else:
-          return data[start:len(data)] + b"\x00" * (end - len(data))
-            
-      num_pages = math.ceil(len(data) / 256)
+      num_pages = MatrixHexpansionFirmware.get_num_pages(data)
 
       for i in range(num_pages):
         MatrixHexpansionFirmware.set_port_led(port, COLOUR_WRITING if i % 2 == 1 else COLOUR_WRITING_2)
-
         print(f"Writing page {i + 1} / {num_pages}")
         
-        time.sleep(0.5) # TODO shouldn't be needed but perhaps I messed up the bootloader sequence...
-        
         # Write page address (0x0100-0x01FF) and page contents
-        page_data = page(i)
+        page_data = MatrixHexpansionFirmware.get_page_data(i)
         
         if garbage is not None:
           page_data = bytes([int(garbage)] * 256)
@@ -130,18 +132,15 @@ class MatrixHexpansionFirmware:
         i2c.writeto(BOOTLOADER_ADDRESS, bytes([0x01, i]) + page_data)
 
         # Read page just written
-        i2c.writeto(BOOTLOADER_ADDRESS, bytes([0x02, i]))
-        page_read_data = i2c.readfrom(BOOTLOADER_ADDRESS, 256)
+        if verify:
+          i2c.writeto(BOOTLOADER_ADDRESS, bytes([0x02, i]))
+          page_read_data = i2c.readfrom(BOOTLOADER_ADDRESS, 256)
 
-        # for j in range(16):
-        #   print(f"page {bytes([i]).hex()} offset {bytes([j * 16]).hex()} Written: {page_data[16*j:16*(j+1)].hex()} Read:    {page_read_data[16*j:16*(j+1)].hex()}")
-
-        if page_read_data != page_data:
-          if verify:
+          if page_read_data != page_data:
             raise Exception(f"Verification failed at page {i}")
-          else:
-            print(f"Page {i} data mismatch, continuing...")
 
+          # for j in range(16):
+          #   print(f"page {bytes([i]).hex()} offset {bytes([j * 16]).hex()} Written: {page_data[16*j:16*(j+1)].hex()} Read:    {page_read_data[16*j:16*(j+1)].hex()}")
 
   def flash_firmware(self, image: str):
     try:
