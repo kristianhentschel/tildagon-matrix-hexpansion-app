@@ -28,7 +28,7 @@ author = "kristian"
 license = "MIT"
 
 # URL to the repository of your app.
-url = "https://codeberg.org/kristianhentschel/tildagon-matrix-hexpansion-app"
+url = "https://github.com/kristianhentschel/tildagon-matrix-hexpansion-app"
 
 # Description of your app.  Maximum 140 characters!
 description = "Companion app for the LED Matrix Hexpansion. Control patterns and animations, display scrolling text or images, or flash your own code."
@@ -37,14 +37,8 @@ description = "Companion app for the LED Matrix Hexpansion. Control patterns and
 # increased, we interpret this as a new version being released.
 #
 # Version number must be a string!
-version = "0.0.1"
+version = "0.0.1-dev1"
 
 [[metadata.capabilities]]
 required = true
-feature = {
-  vid = "0xCAFE",
-  pid = "0x54E1",
-  name = "Matrix Hexpansion",
-  creator = "kristian",
-  url = "https://5yk.de/matrix-hexpansion"
-}
+feature = { vid = "0xCAFE", pid = "0x54E1", name = "Matrix Hexpansion", creator = "kristian", url = "https://5yk.de/matrix-hexpansion" }
