@@ -27,7 +27,7 @@ The program running on the hexpansion processor can be upgraded from this app. T
 
 The CH32V006 microcontroller on the hexpansion base board runs a compiled program that maintains the matrix display, generates frames for the selected pattern, and presents an I2C interface for configuration. It also emulates a read-only EEPROM with the hexpansion header, used by this app to detect which board is plugged into which hexpansion slot.
 
-The app will support flashing custom code to the CH32V003 or CH32V006 processor on the hexpansion. By default the latest 'official' binary image will be loaded from the [Matrix Hexpansion firmware repository](https://github.com/kristianhentschel/tildagon-matrix-hexpansion). Upload custom image files to the badge file system and they will be listed in the firmware upgrade menu.
+The app will support flashing custom code to the CH32V003 or CH32V006 processor on the hexpansion. By default the latest 'official' binary image will be loaded from the [Matrix Hexpansion firmware repository](https://github.com/kristianhentschel/tildagon-matrix-hexpansion-firmware). Upload custom image files to the badge file system and they will be listed in the firmware upgrade menu.
 
 The firmware upgrade mode and bootloader simply writes a binary image to the start of the flash memory and boots into it; no verification of its contents takes place.
 
