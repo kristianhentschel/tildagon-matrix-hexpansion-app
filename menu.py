@@ -41,6 +41,17 @@ class MatrixHexpansionMenu:
     self.notification = None
 
     self.set_menu(self.menu_name)
+
+  def list_firmware_images(self):
+    try:
+      firmware_images = [
+        (name, ASSET_PATH + name) for name in os.listdir(ASSET_PATH) if name.endswith(".bin")
+      ]
+    except Exception as e:
+      print(e)
+      firmware_images = []
+
+    return firmware_images
   
   def set_menu(self, menu_name, position=0, back=False, **state):
     # Clean up previous menu and save its name to return to on BACK
@@ -119,16 +130,16 @@ class MatrixHexpansionMenu:
         time.sleep(0.05)
         self.notification = Notification(ALL_DEFAULT)
 
+      have_firmware = len(self.list_firmware_images()) > 0
+
       return [
         (ALL_STATIC, lambda: self.set_menu(MENU_STATIC)),
         (ALL_DEFAULT, lambda: all_default()),
         (TEXT, lambda: self.set_menu(MENU_TEXT)),
         (PATTERN, lambda: self.set_menu(MENU_PATTERN_PORT)),
-        # TODO firmware update menu hidden as the upload or bootloader is currently broken
-        # (FIRMWARE_UPDATE, lambda: self.set_menu(MENU_FIRMWARE_UPDATE_PORT)),
         (HELP, lambda: self.set_menu(MENU_HELP)),
         (SETTINGS, lambda: self.set_menu(SETTINGS)),
-      ]
+      ] + [(FIRMWARE_UPDATE, lambda: self.set_menu(MENU_FIRMWARE_UPDATE_PORT))] if have_firmware else []
     elif menu_name == MENU_PATTERN_PORT:
       return self.get_boards_menu_items(MENU_PATTERN_PATTERN, include_groups=True, pattern_only=True)
     elif menu_name == MENU_PATTERN_PATTERN:
@@ -175,11 +186,9 @@ class MatrixHexpansionMenu:
     elif menu_name == MENU_FIRMWARE_UPDATE_PORT:
       return self.get_boards_menu_items(MENU_FIRMWARE_UPDATE_IMAGE, include_unknown=True, include_unresponsive=True)
     elif menu_name == MENU_FIRMWARE_UPDATE_IMAGE:
-      # TODO list assets/firmware updates folder
       board = self.menu_state["selected_boards"][0]
-      images = [
-        (name, ASSET_PATH + name) for name in os.listdir(ASSET_PATH) if name.endswith(".bin")
-      ]
+
+      images = self.list_firmware_images()
 
       if len(images) == 0:
         return [

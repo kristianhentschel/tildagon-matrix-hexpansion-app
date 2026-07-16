@@ -123,7 +123,7 @@ class MatrixHexpansionFirmware:
         print(f"Writing page {i + 1} / {num_pages}")
         
         # Write page address (0x0100-0x01FF) and page contents
-        page_data = MatrixHexpansionFirmware.get_page_data(i)
+        page_data = MatrixHexpansionFirmware.get_page_data(data, i)
         
         if garbage is not None:
           page_data = bytes([int(garbage)] * 256)
