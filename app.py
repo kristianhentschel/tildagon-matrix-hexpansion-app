@@ -1,4 +1,6 @@
 import app
+import asyncio
+import time
 from machine import I2C
 from events.input import Buttons, BUTTON_TYPES
 from system.eventbus import eventbus
@@ -39,6 +41,9 @@ class MatrixHexpansionApp(app.App):
 
     self.menu = MatrixHexpansionMenu(self)
 
+    self.scrolling_text = None
+    self.scrolling_text_offset = None
+
   def update(self, delta):
     self.menu.update(delta)
 
@@ -62,7 +67,7 @@ class MatrixHexpansionApp(app.App):
         print(e)
         header = None
       if header:
-        print(port, VID, header.vid, PID, header.pid, header.friendly_name)
+        # print(port, VID, header.vid, PID, header.pid, header.friendly_name)
         if header.vid == VID and header.pid == PID:
           # one of ours, find out which one:
           for board in BOARDS:
@@ -80,6 +85,38 @@ class MatrixHexpansionApp(app.App):
         pass
 
     self.boards = results
-    print(f"Found {len(self.boards)} hexpansions connected {[str(board) for board in results]}")
+    # print(f"Found {len(self.boards)} hexpansions connected {[str(board) for board in results]}")
+
+  def display_text(self, text, scroll_offset = None):
+    # TODO refactor and separate set_scrolling_text from update_/advance_
+    self.scrolling_text = text
+    self.scrolling_text_offset = scroll_offset
+
+    if scroll_offset is not None:
+      self.scrolling_text_offset = scroll_offset
+    else:
+      self.scrolling_text_offset = None
+
+    if self.scrolling_text_offset is not None:
+      dx = self.scrolling_text_offset # TODO don't have a negative offset so may need to calculate offsets individually
+    else:
+      dx = 18 # on first board it should be offset to fully display as it is not scrolling text yet
+    
+    for board in reversed([board for board in self.boards if isinstance(board, LiteLoopBoard)]):
+      try: 
+        board.set_text(text, font="blit16", offset=dx)
+        dx += board.matrix()["cols"]
+      except Exception as e:
+        print(f"Failed to render text on {board.port}: {e}")
+        break
+  
+  def clear_scrolling_text(self):
+    self.scroll_offset = None
+    self.scrolling_text = None
+
+  def background_update(self, delta):
+    # TODO use delta for constant scrolling rate
+      if self.scrolling_text is not None and self.scrolling_text_offset is not None:
+        self.display_text(self.scrolling_text, scroll_offset=(self.scrolling_text_offset + 1) % max(6 * 16, len(self.scrolling_text) * 4))
 
 __app_export__ = MatrixHexpansionApp

@@ -120,6 +120,7 @@ class MatrixHexpansionMenu:
   def get_menu_items(self, menu_name):
     if menu_name == MENU_MAIN:
       def all_default():
+        self.app.clear_scrolling_text()
         self.app.scan_boards()
         print(f"Setting default pattern on {len(self.app.boards)} boards")
         for board in self.app.boards:
@@ -148,6 +149,7 @@ class MatrixHexpansionMenu:
         board = boards[0]
 
         def set_pattern(code):
+          self.app.clear_scrolling_text()
           for b in boards:
             print(f"Setting pattern {code} on board {b}")
             b.set_pattern(code)
@@ -162,6 +164,7 @@ class MatrixHexpansionMenu:
         return [(NOT_FOUND, None)]
     elif menu_name == MENU_STATIC:
       def all_static(level):
+        self.app.clear_scrolling_text()
         self.app.scan_boards()
         for board in self.app.boards:
           try:
@@ -213,15 +216,7 @@ class MatrixHexpansionMenu:
     elif menu_name == MENU_TEXT:
       def display_text(text):
         self.app.scan_boards()
-        dx = 18 # on first board it should be offset to fully display as it is not scrolling text yet
-        for board in reversed(self.app.boards): # reversed to go in left to right order with baseline outwards
-          print(f"{text} for port {board.port}")
-          try: 
-            board.set_text(text, font="blit16", offset=dx)
-            dx += board.matrix()["cols"]
-          except Exception as e:
-            print(f"Failed to render text on {board.port}: {e}")
-            break
+        self.app.display_text(text, scroll_offset = 0 if len(text) > 9 else None) # TODO depends on number of boards available
 
       lines = [
         "EMF",
