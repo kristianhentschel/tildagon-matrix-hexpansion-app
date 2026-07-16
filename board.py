@@ -73,13 +73,16 @@ class Board:
   def flash_firmware(self, image: str):
     return MatrixHexpansionFirmware(self.port).flash_firmware(image)
 
-  def set_fill(level: int):
+  def set_all(level: int):
+    pass
+
+  def set_on_off_image(self, packed):
+    pass
+
+  def set_pwm_image(level):
     pass
 
   def set_pattern(index: int):
-    pass
-
-  def set_image(values: list):
     pass
 
   @staticmethod

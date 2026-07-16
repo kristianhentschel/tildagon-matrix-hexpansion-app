@@ -1,6 +1,7 @@
 from system.hexpansion.config import HexpansionConfig
 from system.hexpansion.header import HexpansionHeader
 from .board import Board
+import math
 
 ADDRESS = 0x20
 
@@ -13,21 +14,43 @@ class LiteLoopBoard (Board):
     super().__init__(config, header)
 
   def set_pattern(self, pattern_index):
+    # turn off pattern and set direct control all off
+    self.set_all(0)
+
     # select pattern
     self.i2c.writeto_mem(ADDRESS, REG_PATTERN_INDEX, bytes([pattern_index]))
-    # disable direct control
-    self.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([0]))
 
-  def set_fill(self, level):
-    # TODO firmware support to set this with two bytes perhaps with a special flag in reg direct control
-    self.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([8] + [level] * NUM_LEDS))
+    # disable direct control to re-enable pattern
+    self.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([0]))
 
   def set_default_pattern(self):
     self.set_pattern(2)
 
-  def set_image(self, values):
-    print("liteloop set_image")
-    self.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([8] + values[0:NUM_LEDS]))
+  def set_all(self, value):
+    """ Set all LEDs to the same constant value """
+    self.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([0x01] + [value] * NUM_LEDS))
+
+  @staticmethod
+  def pack_on_off_image(image):
+    """ Pack a list of 156 boolean on-off values into 20 bytes to use with set_on_off_image """
+    packed = [0x00] * (math.ceil(NUM_LEDS / 8))
+    
+    for i in range(len(packed)):
+      for k in range(8):
+        n = i * 8 + k
+        if n < NUM_LEDS and image[n]:
+          packed[i] |= 0x01 << (7 - k)
+
+    return packed
+
+  def set_on_off_image(self, packed):
+    """ packed data is an array of 20 bytes, with each bit controlling the on-off state of one LED """
+    self.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([0x02] + packed[0:20]))
+
+
+  def set_pwm_image(self, image):
+    """ image is an array of 156 bytes, with each byte controlling the brightness level of one LED """
+    self.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([0x03] + image[0:NUM_LEDS]))
 
   def set_text(self, text, font="blit16", offset=18):
     print("liteloop set_text")

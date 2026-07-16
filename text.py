@@ -60,4 +60,4 @@ class TextRenderer:
 
   def display(self):
     print("display")
-    self.board.set_image(self.buffer)
+    self.board.set_pwm_image(self.buffer)

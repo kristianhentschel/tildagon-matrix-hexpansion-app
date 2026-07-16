@@ -165,7 +165,7 @@ class MatrixHexpansionMenu:
         self.app.scan_boards()
         for board in self.app.boards:
           try:
-            board.set_fill(level)
+            board.set_all(level)
           except Exception as e:
             print("error setting static fill", e)
         time.sleep(0.05)
@@ -222,14 +222,6 @@ class MatrixHexpansionMenu:
           except Exception as e:
             print(f"Failed to render text on {board.port}: {e}")
             break
-          # try:
-          #   t = TextDisplay(board)
-          #   t.render(text, offset=dx, font="blit32" if len(text) < 8 else "blit16")
-          #   t.display()
-          #   time.sleep(0.05)
-          #   dx += board.matrix()["cols"] # TODO expose grid width without having to get the full matrix()
-          # except Exception as e:
-          #   print(f"Failed to render text on {board.port}: {e}")
 
       lines = [
         "EMF",
