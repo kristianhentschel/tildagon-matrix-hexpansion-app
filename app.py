@@ -52,7 +52,7 @@ class MatrixHexpansionApp(app.App):
     else:
       print(f"Got some other event {event}")
 
-  def scan_boards(self, *args):
+  def scan_boards(self):
     results = []
     for port in range(1, 7):
       i2c = I2C(port)
