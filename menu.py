@@ -187,9 +187,9 @@ class MatrixHexpansionMenu:
         ("255 (100%)", 255),
       ]]
     elif menu_name == MENU_FIRMWARE_UPDATE_PORT:
-      return self.get_boards_menu_items(MENU_FIRMWARE_UPDATE_IMAGE, include_unknown=True, include_unresponsive=True)
+      return self.get_boards_menu_items(MENU_FIRMWARE_UPDATE_IMAGE, include_unknown=True, include_unresponsive=True, include_groups=True)
     elif menu_name == MENU_FIRMWARE_UPDATE_IMAGE:
-      board = self.menu_state["selected_boards"][0]
+      boards = self.menu_state["selected_boards"]
 
       images = self.list_firmware_images()
 
@@ -199,15 +199,16 @@ class MatrixHexpansionMenu:
         ]
 
       def flash_firmware(image_path):
-        err = board.flash_firmware(image_path)
-        if (err):
-          self.notification = Notification(err)
-        else:
-          self.notification = Notification("Firmware updated")
+        for board in boards:
+          err = board.flash_firmware(image_path)
+          if (err):
+            self.notification = Notification(err, port=board.port)
+          else:
+            self.notification = Notification("Firmware updated", port=board.port)
 
-        # TODO workaround - return back to port selection
-        # TODO this immediately scans hexpansions and if it's still in bootloader mode it will show as unresponsive (modify bootloader to take an immediate reboot command)
-        self.back()
+          # TODO workaround - return back to port selection
+          # TODO this immediately scans hexpansions and if it's still in bootloader mode it will show as unresponsive (modify bootloader to take an immediate reboot command)
+          self.back()
 
       # TODO firmware upgrade progress, error handling
       return [
