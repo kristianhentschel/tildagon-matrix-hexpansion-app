@@ -57,7 +57,8 @@ class MatrixHexpansionApp(app.App):
     else:
       print(f"Got some other event {event}")
 
-  def scan_boards(self):
+  def scan_boards(self, port=None):
+    # port argument is currently unused but needed as this is installed as event handler on hexpansion insertion
     results = []
     for port in range(1, 7):
       i2c = I2C(port)
