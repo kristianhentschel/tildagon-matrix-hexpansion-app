@@ -1,7 +1,7 @@
 import math
 import re
 import os
-from app_components import Menu, Notification, tokens
+from app_components import Menu, Notification, TextDialog, tokens
 import time
 
 ASSET_PATH="/".join(__file__.split("/")[:-1]) + "/assets/"
@@ -16,6 +16,7 @@ MENU_PATTERN_PORT = "Pattern port"
 MENU_PATTERN_PATTERN = "Pattern"
 MENU_TEXT = "Text"
 MENU_STATIC = "Static"
+MENU_TEXT_ENTRY = "Text entry"
 
 # Menu item names, only for display, don't have to be unique
 ALL_DEFAULT = "All to default"
@@ -39,6 +40,7 @@ class MatrixHexpansionMenu:
     self.menu_state = {}
     self.highlighted_ports = []
     self.notification = None
+    self.dialog = None
 
     self.set_menu(self.menu_name)
 
@@ -56,9 +58,12 @@ class MatrixHexpansionMenu:
   def set_menu(self, menu_name, position=0, back=False, **state):
     # Clean up previous menu and save its name to return to on BACK
     if self.menu is not None:
+      print(f"menu cleanup {self.menu_name}, back={back}")
       if not back:
         self.menu_stack.append((self.menu_name, self.menu.position))
       self.menu._cleanup()
+      self.menu = None
+      self.menu_name = None
 
     # Update state variables before entering the next menu
     for key in state:
@@ -67,6 +72,10 @@ class MatrixHexpansionMenu:
     # Generate menu items for the new menu and instantiate it
     self.menu_items = self.get_menu_items(menu_name)
     self.menu_name = menu_name
+
+    if len(self.menu_items) == 0:
+      return
+
     if len(self.menu_items) == 0 or position > len(self.menu_items):
       position = 0
     self.menu = Menu(self.app,
@@ -83,10 +92,13 @@ class MatrixHexpansionMenu:
       pass
 
   def select(self, item, position):
-    name, cb = self.menu_items[position]
+    try:
+      name, cb = self.menu_items[position]
 
-    if cb is not None:
-      cb()
+      if cb is not None:
+        cb()
+    except IndexError:
+      pass
 
   def back(self):
     if len(self.menu_stack) == 0:
@@ -107,14 +119,23 @@ class MatrixHexpansionMenu:
       self.highlighted_ports=[]
 
   def update(self, delta):
-    self.menu.update(delta)
+    if self.dialog is None and self.menu is not None:
+        self.menu.update(delta)
+
     if (self.notification):
       self.notification.update(delta)
 
   def draw(self, ctx):
-    draw_ports(ctx, self.highlighted_ports, [b.port for b in self.menu_state.get("selected_boards", [])])
-    self.menu.draw(ctx)
-    if (self.notification):
+    if self.dialog:
+      self.dialog.draw(ctx)
+    elif self.menu:
+      draw_ports(ctx, self.highlighted_ports, [b.port for b in self.menu_state.get("selected_boards", [])])
+      self.menu.draw(ctx)
+    else:
+      # TODO may briefly end up without a menu after text entry, this really shouldn't be in draw but avoids double button handling...
+      self.back()
+
+    if self.notification:
       self.notification.draw(ctx)
 
   def get_menu_items(self, menu_name):
@@ -215,10 +236,6 @@ class MatrixHexpansionMenu:
         (image_name, lambda image_path=image_path: flash_firmware(image_path)) for image_name, image_path in images
       ]
     elif menu_name == MENU_TEXT:
-      def display_text(text):
-        self.app.scan_boards()
-        self.app.display_text(text, scroll_offset = 0 if len(text) > 9 else None) # TODO depends on number of boards available
-
       lines = [
         "EMF",
         "#EMFCamp",
@@ -227,13 +244,21 @@ class MatrixHexpansionMenu:
         "#badgelife",
         "HACK THE PLANET",
         "You know the rules, and so do I",
-        "You too can be a walking billboard... buy a matrix hexpansion today!",
         "Help I'm stuck in a hexpansion assembly line",
       ]
 
       return [
-        (line if len(line) < 20 else line[0:18] + "...", lambda line=line: display_text(line)) for line in lines
+        ("Enter text", lambda: self.set_menu(MENU_TEXT_ENTRY))
+      ] + [
+        (line if len(line) < 20 else line[0:18] + "...", lambda line=line: self.display_text(line)) for line in lines
       ]
+    elif menu_name == MENU_TEXT_ENTRY:
+      def complete_handler(text):
+        print(f"Complete: text entered was '{text}'")
+        self.display_text(text)
+
+      self.start_text_entry("Custom text", complete_handler=complete_handler)
+      return []
     elif menu_name == MENU_HELP:
       return [
         # TODO build a proper help screen layout, abusing existing menu system for now
@@ -287,6 +312,31 @@ class MatrixHexpansionMenu:
         lambda board=board: self.set_menu(next_menu, selected_boards=[board]),
       ) for board in filtered_boards
     ]
+
+  def start_text_entry(self, label, complete_handler):
+    print("start text entry")
+    if self.dialog is not None:
+      self.dialog._cleanup()
+
+    def on_complete():
+      print("complete: dialog cleanup")
+      text = self.dialog.text
+      self.dialog._cleanup()
+      self.dialog = None
+      complete_handler(text)
+
+    def on_cancel():
+      print("cancel: dialog cleanup")
+      self.dialog._cleanup()
+      self.dialog = None
+
+    self.dialog = TextDialog(label, self.app, masked=False, on_complete=on_complete, on_cancel=on_cancel)
+
+  def display_text(self, text):
+    self.app.scan_boards()
+    self.app.display_text(text, scroll_offset = 0 if len(text) > 9 else None) # TODO depends on number of boards available
+
+    
 
 def draw_ports(ctx, highlighted, selected):
   for port in range(1, 7):

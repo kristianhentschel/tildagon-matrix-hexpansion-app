@@ -8,8 +8,7 @@ from system.eventbus import eventbus
 from system.hexpansion.events import HexpansionInsertionEvent, HexpansionRemovalEvent
 from system.hexpansion.util import read_hexpansion_header
 from system.hexpansion.config import HexpansionConfig
-from app_components import clear_background
-
+from app_components import clear_background, TextDialog
 from .menu import MatrixHexpansionMenu
 from .events import MatrixHexpansionToast
 from .firmware import MatrixHexpansionFirmware

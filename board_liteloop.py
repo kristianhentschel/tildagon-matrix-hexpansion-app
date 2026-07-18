@@ -53,7 +53,6 @@ class LiteLoopBoard (Board):
     self.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([0x03] + image[0:NUM_LEDS]))
 
   def set_text(self, text, font="blit16", offset=18):
-    print("liteloop set_text")
     # text contents in direct control area
     self.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([0]) + text[0:NUM_LEDS - 1] + b"\0")
     
