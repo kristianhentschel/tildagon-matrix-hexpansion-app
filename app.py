@@ -2,7 +2,6 @@ import app
 import asyncio
 import time
 from machine import I2C
-from events.input import Buttons, BUTTON_TYPES
 from system.eventbus import eventbus
 # from system.hexpansion.events import HexpansionMountedEvent, HexpansionUnmountedEvent
 from system.hexpansion.events import HexpansionInsertionEvent, HexpansionRemovalEvent
@@ -25,6 +24,10 @@ BOARDS = [
   UnknownBoard,
 ]
 
+EVENT_PREFIX = "matrix-hexpansion:"
+EVENT_DISPLAY_TEXT = f"{EVENT_PREFIX}display-text"
+EVENT_CLEAR_TEXT = f"{EVENT_PREFIX}clear-text"
+
 class MatrixHexpansionApp(app.App):
   def __init__(self):
     self.boards = []
@@ -37,6 +40,9 @@ class MatrixHexpansionApp(app.App):
     # eventbus.on(HexpansionUnmountedEvent, self.scan_boards, self)
     eventbus.on(HexpansionInsertionEvent, self.scan_boards, self)
     eventbus.on(HexpansionRemovalEvent, self.scan_boards, self)
+
+    eventbus.on(EVENT_DISPLAY_TEXT, self.handle_event_display_text, self)
+    eventbus.on(EVENT_CLEAR_TEXT, self.handle_event_clear_text, self)
 
     self.menu = MatrixHexpansionMenu(self)
 
@@ -118,5 +124,25 @@ class MatrixHexpansionApp(app.App):
     # TODO use delta for constant scrolling rate
       if self.scrolling_text is not None and self.scrolling_text_offset is not None:
         self.display_text(self.scrolling_text, scroll_offset=(self.scrolling_text_offset + 1) % max(6 * 16, len(self.scrolling_text) * 4))
+
+  def handle_event_clear_text(self, event):
+    self.clear_scrolling_text()
+    
+    # TODO may want to integrate this with all_default in Menu, or go to the previous pattern not the default
+    self.scan_boards()
+    for board in self.boards:
+      try:
+        board.set_default_pattern()
+      except:
+        pass
+
+  def handle_event_display_text(self, event):
+    try:
+      text = event["text"]
+      self.scan_boards()
+      self.display_text(text, scroll_offset=0)
+    except Exception as e:
+      raise e # TODO pass instead
+      pass
 
 __app_export__ = MatrixHexpansionApp
