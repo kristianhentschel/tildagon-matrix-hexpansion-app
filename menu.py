@@ -156,8 +156,6 @@ class MatrixHexpansionMenu:
         time.sleep(0.05)
         self.notification = Notification(ALL_DEFAULT)
 
-      have_firmware = len(self.list_firmware_images()) > 0
-
       return [
         (ALL_STATIC, lambda: self.set_menu(MENU_STATIC)),
         (ALL_DEFAULT, lambda: all_default()),
@@ -165,7 +163,8 @@ class MatrixHexpansionMenu:
         (PATTERN, lambda: self.set_menu(MENU_PATTERN_PORT)),
         (HELP, lambda: self.set_menu(MENU_HELP)),
         (SETTINGS, lambda: self.set_menu(SETTINGS)),
-      ] + [(FIRMWARE_UPDATE, lambda: self.set_menu(MENU_FIRMWARE_UPDATE_PORT))] if have_firmware else []
+        (FIRMWARE_UPDATE, lambda: self.set_menu(MENU_FIRMWARE_UPDATE_PORT)),
+      ]
     elif menu_name == MENU_PATTERN_PORT:
       return self.get_boards_menu_items(MENU_PATTERN_PATTERN, include_groups=True, pattern_only=True)
     elif menu_name == MENU_PATTERN_PATTERN:
@@ -226,14 +225,20 @@ class MatrixHexpansionMenu:
           import requests
           response = requests.get(FIRMWARE_DOWNLOAD_URL)
           filename = f"lite_loop.{FIRMWARE_VERSION}.bin"
-          os.makedirs(ASSET_PATH, exist_ok=True)
-          with open(ASSET_PATH + filename) as f:
+          print(f"Got {len(response.content)} bytes {filename}")
+
+          try:
+            os.mkdir(ASSET_PATH)
+          except FileExistsError:
+            pass
+          with open(ASSET_PATH + filename, "wb") as f:
             f.write(response.content)
+            print(f"downloaded file written to {ASSET_PATH+filename}")
           self.notification = Notification(f"Downloaded firmware {filename}")
           # TODO not deleting previous versions but maybe we should?
         except Exception as e:
-          print(e)
-          self.notification = Notification("Failed to fetch updated firmware")
+          print("failed to fetch firwmare", e)
+          self.notification = Notification(f"Failed to fetch updated firmware {e}")
         finally:
           self.set_menu(MENU_FIRMWARE_UPDATE_IMAGE, position=0, back=True)
 
