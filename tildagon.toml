@@ -37,7 +37,7 @@ description = "Companion app for the LED Matrix Hexpansion. Control patterns and
 # increased, we interpret this as a new version being released.
 #
 # Version number must be a string!
-version = "0.0.1-dev1"
+version = "0.0.2-dev1"
 
 [[metadata.capabilities]]
 required = true

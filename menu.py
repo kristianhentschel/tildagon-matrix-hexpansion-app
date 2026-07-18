@@ -29,6 +29,10 @@ SETTINGS = "Settings"
 ALL = "All"
 NOT_FOUND = "N/A"
 NOT_IMPLEMENTED = "Not implemented"
+CHECK_FIRMWARE_UPDATE = "Fetch latest..."
+
+FIRMWARE_VERSION="v0.0.2"
+FIRMWARE_DOWNLOAD_URL=f"https://github.com/kristianhentschel/tildagon-matrix-hexpansion/releases/download/{FIRMWARE_VERSION}/lite_loop.bin"
 
 class MatrixHexpansionMenu:
   def __init__(self, app):
@@ -45,13 +49,13 @@ class MatrixHexpansionMenu:
     self.set_menu(self.menu_name)
 
   def list_firmware_images(self):
+    firmware_images = []
     try:
       firmware_images = [
         (name, ASSET_PATH + name) for name in os.listdir(ASSET_PATH) if name.endswith(".bin")
       ]
     except Exception as e:
-      print(e)
-      firmware_images = []
+      print(f"could not list firmware images: {e}")
 
     return firmware_images
   
@@ -211,12 +215,31 @@ class MatrixHexpansionMenu:
       return self.get_boards_menu_items(MENU_FIRMWARE_UPDATE_IMAGE, include_unknown=True, include_unresponsive=True, include_groups=True)
     elif menu_name == MENU_FIRMWARE_UPDATE_IMAGE:
       boards = self.menu_state["selected_boards"]
-
       images = self.list_firmware_images()
+
+      def check_firmware_update():
+        print("Firmware update check...")
+
+        self.notification = Notification("Checking...")
+
+        try:
+          import requests
+          response = requests.get(FIRMWARE_DOWNLOAD_URL)
+          filename = f"lite_loop.{FIRMWARE_VERSION}.bin"
+          os.makedirs(ASSET_PATH, exist_ok=True)
+          with open(ASSET_PATH + filename) as f:
+            f.write(response.content)
+          self.notification = Notification(f"Downloaded firmware {filename}")
+          # TODO not deleting previous versions but maybe we should?
+        except Exception as e:
+          print(e)
+          self.notification = Notification("Failed to fetch updated firmware")
+        finally:
+          self.set_menu(MENU_FIRMWARE_UPDATE_IMAGE, position=0, back=True)
 
       if len(images) == 0:
         return [
-          NOT_FOUND, None
+          (CHECK_FIRMWARE_UPDATE, check_firmware_update),
         ]
 
       def flash_firmware(image_path):
@@ -234,6 +257,8 @@ class MatrixHexpansionMenu:
       # TODO firmware upgrade progress, error handling
       return [
         (image_name, lambda image_path=image_path: flash_firmware(image_path)) for image_name, image_path in images
+      ] + [
+        (CHECK_FIRMWARE_UPDATE, check_firmware_update)
       ]
     elif menu_name == MENU_TEXT:
       lines = [
@@ -335,8 +360,6 @@ class MatrixHexpansionMenu:
   def display_text(self, text):
     self.app.scan_boards()
     self.app.display_text(text, scroll_offset = 0 if len(text) > 9 else None) # TODO depends on number of boards available
-
-    
 
 def draw_ports(ctx, highlighted, selected):
   for port in range(1, 7):
