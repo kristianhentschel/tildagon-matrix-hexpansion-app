@@ -1,8 +1,9 @@
 import math
 import re
 import os
-from app_components import Menu, Notification, TextDialog, tokens
 import time
+from app_components import Menu, Notification, TextDialog, tokens
+from .board_liteloop import LiteLoopBoard
 
 ASSET_PATH="/".join(__file__.split("/")[:-1]) + "/assets/"
 print(f"ASSET_PATH={ASSET_PATH}")
@@ -364,7 +365,8 @@ class MatrixHexpansionMenu:
 
   def display_text(self, text):
     self.app.scan_boards()
-    self.app.display_text(text, scroll_offset = 0 if len(text) > 9 else None) # TODO depends on number of boards available
+    num_boards = len([board for board in self.app.boards if isinstance(board, LiteLoopBoard)])
+    self.app.display_text(text, scroll_offset = 0 if len(text) > 4 * num_boards else None)
 
 def draw_ports(ctx, highlighted, selected):
   for port in range(1, 7):
