@@ -191,17 +191,18 @@ class MatrixHexpansionMenu:
       def all_static(level):
         self.app.clear_scrolling_text()
         self.app.scan_boards()
-        for board in self.app.boards:
-          try:
-            board.set_all(level)
-          except Exception as e:
-            print("error setting static fill", e)
-        time.sleep(0.05)
+
+        # TODO: repeating this update twice as occasionally a board doesn't get the message on the first attempt
+        for i in range(2):
+          for board in self.app.boards:
+            try:
+              board.set_all(level)
+            except Exception as e:
+              print("error setting static fill", e)
         self.notification = Notification(ALL_STATIC + f" {level}")
 
       return [(f"{label}", lambda level=level: all_static(level)) for label, level in [
         ("0 (off)", 0),
-        (1, 1),
         (2, 2),
         (4, 4),
         (8, 8),
