@@ -28,7 +28,7 @@ class LiteLoopBoard (Board):
 
   def set_all(self, value):
     """ Set all LEDs to the same constant value """
-    self.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([0x01] + [value] * NUM_LEDS))
+    self.i2c.writeto_mem(ADDRESS, REG_DIRECT_CONTROL, bytes([0x01, value]))
 
   @staticmethod
   def pack_on_off_image(image):
