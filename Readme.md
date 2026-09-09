@@ -46,4 +46,15 @@ The firmware upgrade mode and bootloader simply writes a binary image to the sta
 
 To enable firmware upgrades, the solder jumper `HSG - PD7/NRST` on the back of the base board must be bridged. This enables the badge to enter the bootloader mode after briefly cutting power to the hexpansion. `PD7` by default is configured as an output to drive the matrix display (when not in bootloader mode), so bridging this jumper means that `HSG` (high speed pin 2) cannot be used as an output from the badge.
 
+# Development
+
+Assuming the app is already installed (with metadata.json etc in place)
+
+```sh
+. ../badge-2024-software/env/bin/activate
+mpremote cp -r *.py :/apps/kristianhentschel_tildagon_matrix_hexpansion_app && mpremote reset
+```
+
+
+
 
