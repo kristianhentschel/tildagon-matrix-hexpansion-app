@@ -20,7 +20,7 @@ class UnknownBoard (Board):
 
   @staticmethod
   def name():
-    return "Unsupported hexpansion"
+    return "Unsupported"
 
   @staticmethod
   def patterns():
