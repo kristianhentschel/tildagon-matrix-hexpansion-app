@@ -34,7 +34,7 @@ class Board:
   def flash_firmware(self, image: str):
     return MatrixHexpansionFirmware(self.port).flash_firmware(image)
 
-  def set_all(level: int):
+  def set_all(self, level: int):
     pass
 
   def set_on_off_image(self, packed):

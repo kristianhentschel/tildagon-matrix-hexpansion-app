@@ -35,6 +35,8 @@ CHECK_FIRMWARE_UPDATE = "Fetch latest..."
 FIRMWARE_VERSION="v0.0.2"
 FIRMWARE_DOWNLOAD_URL=f"https://github.com/kristianhentschel/tildagon-matrix-hexpansion/releases/download/{FIRMWARE_VERSION}/lite_loop.bin"
 
+TMP_TOGGLE_COUNT = 0
+
 class MatrixHexpansionMenu:
   def __init__(self, app):
     self.app = app
@@ -188,13 +190,27 @@ class MatrixHexpansionMenu:
         print(e)
         return [(NOT_FOUND, None)]
     elif menu_name == MENU_STATIC:
+      self.app.scan_boards()
+
       def all_static(level):
+        global TMP_TOGGLE_COUNT
+
         self.app.clear_scrolling_text()
-        self.app.scan_boards()
+
+        # avoid more I2C transfers here - use maintained list of connected boards
+        # self.app.scan_boards()
+
+        if level == -1:
+          if TMP_TOGGLE_COUNT % 2 == 0:
+            level = 255
+          else:
+            level = 0
+          TMP_TOGGLE_COUNT += 1
+          print(f"Toggle {TMP_TOGGLE_COUNT}")
 
         # TODO: repeating this update twice as occasionally a board doesn't get the message on the first attempt
         for i in range(2):
-          for board in self.app.boards:
+          for board in self.app.get_boards():
             try:
               board.set_all(level)
             except Exception as e:
@@ -202,6 +218,7 @@ class MatrixHexpansionMenu:
         self.notification = Notification(ALL_STATIC + f" {level}")
 
       return [(f"{label}", lambda level=level: all_static(level)) for label, level in [
+        (f"toggle", -1),
         ("0 (off)", 0),
         (2, 2),
         (4, 4),

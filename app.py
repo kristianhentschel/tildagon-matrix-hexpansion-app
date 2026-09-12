@@ -91,7 +91,10 @@ class MatrixHexpansionApp(app.App):
         pass
 
     self.boards = results
-    # print(f"Found {len(self.boards)} hexpansions connected {[str(board) for board in results]}")
+    print(f"Found {len(self.boards)} hexpansions connected {[str(board) for board in results]}")
+
+  def get_boards(self):
+    return self.boards
 
   def display_text(self, text, scroll_offset = None):
     # TODO refactor and separate set_scrolling_text from update_/advance_

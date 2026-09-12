@@ -1,0 +1,7 @@
+{
+  "python-envs.defaultEnvManager": "ms-python.python:pipenv",
+  "python.analysis.extraPaths": [
+    "~/stuff/badge-2024-software/modules",
+    "~/stuff/badge-2024-software/sim/fakes",
+  ]
+}
